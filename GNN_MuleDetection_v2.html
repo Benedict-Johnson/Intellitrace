@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GNN-Based Money Mule Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #04070F;
+  --bg2:    #080E1C;
+  --bg3:    #0C1525;
+  --card:   #0B1220;
+  --border: #162035;
+  --border2:#1E2D48;
+  --cyan:   #00E5FF;
+  --cyan2:  #00B8D9;
+  --gold:   #FFB300;
+  --red:    #FF3D57;
+  --green:  #00E676;
+  --purple: #9C6FFF;
+  --blue:   #2979FF;
+  --text:   #DCE8F5;
+  --muted:  #5A7090;
+  --dim:    #8A9EB8;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  width:100vw;height:100vh;
+  overflow:hidden;
+}
+/* ── SLIDE SYSTEM ── */
+.deck{width:100%;height:100vh;position:relative;}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;
+  transition:opacity .45s ease,transform .45s ease;
+  transform:translateY(30px);
+  overflow:hidden;
+}
+.slide.active{opacity:1;pointer-events:all;transform:translateY(0);}
+.slide.out{opacity:0;transform:translateY(-30px);}
+
+/* ── GLOBAL HEADER BAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 48px 0;
+  flex-shrink:0;
+}
+.topbar-label{
+  font-size:10px;letter-spacing:4px;color:var(--cyan);
+  text-transform:uppercase;font-weight:600;
+  display:flex;align-items:center;gap:8px;
+}
+.topbar-label::before{content:'';width:20px;height:2px;background:var(--cyan);}
+.topbar-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;}
+
+/* ── BODY AREA ── */
+.sbody{
+  flex:1;padding:28px 48px 90px;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.sbody.scroll{overflow-y:auto;}
+.sbody.scroll::-webkit-scrollbar{width:3px;}
+.sbody.scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ── TYPOGRAPHY ── */
+h1.hero-t{
+  font-size:clamp(40px,5.5vw,72px);
+  font-weight:900;line-height:.98;
+  color:#fff;letter-spacing:-2px;
+}
+h1.hero-t em{color:var(--cyan);font-style:normal;}
+h2.st{
+  font-size:clamp(26px,3vw,42px);
+  font-weight:800;color:#fff;
+  letter-spacing:-1px;line-height:1.05;
+  margin-bottom:6px;
+}
+h2.st em{color:var(--cyan);font-style:normal;}
+.sub{font-size:14px;color:var(--muted);margin-bottom:24px;font-weight:400;letter-spacing:.3px;}
+
+/* ── CARDS ── */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:18px 20px;
+}
+.card.c-cyan{border-color:rgba(0,229,255,.25);background:rgba(0,229,255,.03);}
+.card.c-red{border-color:rgba(255,61,87,.25);background:rgba(255,61,87,.03);}
+.card.c-green{border-color:rgba(0,230,118,.25);background:rgba(0,230,118,.03);}
+.card.c-gold{border-color:rgba(255,179,0,.25);background:rgba(255,179,0,.03);}
+.card.c-purple{border-color:rgba(156,111,255,.25);background:rgba(156,111,255,.03);}
+.card.c-blue{border-color:rgba(41,121,255,.25);background:rgba(41,121,255,.03);}
+
+.clabel{font-size:9.5px;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:8px;}
+.clabel.cyan{color:var(--cyan);}
+.clabel.red{color:var(--red);}
+.clabel.green{color:var(--green);}
+.clabel.gold{color:var(--gold);}
+.clabel.purple{color:var(--purple);}
+.clabel.blue{color:var(--blue);}
+.ctitle{font-size:15px;font-weight:700;color:#fff;margin-bottom:7px;line-height:1.25;}
+.cbody{font-size:12.5px;color:var(--dim);line-height:1.68;font-weight:400;}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+
+/* ── TAGS ── */
+.tag{
+  display:inline-block;padding:3px 10px;border-radius:20px;
+  font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+}
+.tag.cyan{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2);}
+.tag.red{background:rgba(255,61,87,.1);color:var(--red);border:1px solid rgba(255,61,87,.2);}
+.tag.green{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+.tag.gold{background:rgba(255,179,0,.1);color:var(--gold);border:1px solid rgba(255,179,0,.2);}
+.tag.purple{background:rgba(156,111,255,.1);color:var(--purple);border:1px solid rgba(156,111,255,.2);}
+.tag.blue{background:rgba(41,121,255,.1);color:var(--blue);border:1px solid rgba(41,121,255,.2);}
+
+/* ── BULLET LIST ── */
+.blist{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.blist li{display:flex;gap:10px;font-size:13px;color:var(--dim);line-height:1.6;}
+.blist li::before{content:'▸';color:var(--cyan);flex-shrink:0;margin-top:1px;}
+
+/* ── SPACER ── */
+.sp{flex-shrink:0;}
+
+/* ── NAV ── */
+.nav{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:14px;
+  background:rgba(8,14,28,.9);backdrop-filter:blur(16px);
+  border:1px solid var(--border2);border-radius:50px;
+  padding:10px 22px;z-index:200;
+}
+.nav button{
+  background:none;border:1px solid var(--border2);color:var(--dim);
+  width:32px;height:32px;border-radius:50%;cursor:pointer;
+  font-size:15px;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+}
+.nav button:hover{background:var(--cyan);border-color:var(--cyan);color:#000;}
+.dots{display:flex;gap:5px;align-items:center;}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--border2);cursor:pointer;transition:all .3s;}
+.dot.on{background:var(--cyan);width:18px;border-radius:3px;}
+.ncount{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);min-width:52px;text-align:center;}
+
+/* ── HERO BG ── */
+.hero-bg{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 60% at 80% 35%,rgba(0,229,255,.06) 0%,transparent 70%),
+    radial-gradient(ellipse 40% 40% at 90% 75%,rgba(156,111,255,.05) 0%,transparent 60%);
+}
+.hero-grid{
+  position:absolute;top:0;right:0;width:52%;height:100%;
+  background-image:linear-gradient(rgba(22,32,53,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(22,32,53,.5) 1px,transparent 1px);
+  background-size:36px 36px;
+  -webkit-mask-image:linear-gradient(to right,transparent 0%,black 40%);
+  mask-image:linear-gradient(to right,transparent 0%,black 40%);
+  pointer-events:none;
+}
+
+/* ── PULSE DOT ── */
+.pdot{width:7px;height:7px;border-radius:50%;background:var(--cyan);animation:pd 2s infinite;}
+@keyframes pd{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,255,.4);}50%{opacity:.5;box-shadow:0 0 0 6px rgba(0,229,255,0);}}
+
+/* ── FLOW CHAIN ── */
+.flow{display:flex;align-items:center;gap:0;margin:16px 0;}
+.fn{flex:1;text-align:center;padding:14px 8px;background:var(--card);border:1px solid var(--border);}
+.fn:first-child{border-radius:10px 0 0 10px;}
+.fn:last-child{border-radius:0 10px 10px 0;}
+.fn+.fn{border-left:none;}
+.fn.fraud{border-color:rgba(255,61,87,.45);background:rgba(255,61,87,.05);}
+.fn-ico{font-size:20px;margin-bottom:5px;}
+.fn-label{font-size:11.5px;font-weight:700;color:#fff;}
+.fn-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.fa{font-size:16px;color:var(--red);padding:0 4px;flex-shrink:0;}
+
+/* ── MODULE CARD ── */
+.mod{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card);}
+.mod-head{padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);}
+.mod-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.mod-name{font-size:14px;font-weight:700;color:#fff;line-height:1.2;}
+.mod-file{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted);margin-top:2px;}
+.mod-body{padding:14px 18px;}
+.mod-body p{font-size:12.5px;color:var(--dim);line-height:1.65;margin-bottom:10px;}
+.mod-tags{display:flex;flex-wrap:wrap;gap:5px;}
+
+/* ── PHASE ROADMAP ── */
+.phases{display:flex;flex-direction:column;gap:0;position:relative;}
+.phases::before{content:'';position:absolute;left:18px;top:16px;bottom:16px;width:2px;background:linear-gradient(to bottom,var(--cyan),var(--purple));border-radius:2px;}
+.phase{display:flex;gap:18px;align-items:flex-start;padding:9px 0;}
+.ph-dot{
+  width:18px;height:18px;border-radius:50%;border:2px solid;background:var(--bg);
+  flex-shrink:0;z-index:1;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;
+}
+.ph-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:3px;}
+.ph-desc{font-size:11.5px;color:var(--muted);line-height:1.55;}
+
+/* ── TECH ITEM ── */
+.tech{display:flex;align-items:center;gap:13px;padding:13px 16px;border:1px solid var(--border);border-radius:10px;background:var(--card);}
+.tech-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.tech-name{font-size:13px;font-weight:700;color:#fff;}
+.tech-role{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* ── OUTCOME ── */
+.oc{padding:16px 18px;border-radius:12px;border:1px solid;position:relative;overflow:hidden;}
+.oc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;}
+.oc-n{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:8px;}
+.oc-t{font-size:14px;font-weight:700;color:#fff;margin-bottom:5px;}
+.oc-d{font-size:12px;color:var(--dim);line-height:1.6;}
+
+/* ── ANIMATIONS ── */
+@keyframes fiu{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.slide.active .an{animation:fiu .5s ease forwards;opacity:0;}
+.slide.active .an:nth-child(1){animation-delay:.05s;}
+.slide.active .an:nth-child(2){animation-delay:.12s;}
+.slide.active .an:nth-child(3){animation-delay:.19s;}
+.slide.active .an:nth-child(4){animation-delay:.26s;}
+.slide.active .an:nth-child(5){animation-delay:.33s;}
+.slide.active .an:nth-child(6){animation-delay:.40s;}
+.slide.active .an:nth-child(7){animation-delay:.47s;}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 1 — HERO
+══════════════════════════════════════════════════ -->
+<div class="slide active" id="s1">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="topbar">
+    <div class="topbar-label">Fraud Intelligence Platform</div>
+    <div class="topbar-num">01 / 11</div>
+  </div>
+  <div class="sbody" style="justify-content:center;padding-top:40px;">
+    <div style="position:relative;z-index:2;max-width:60%;">
+      <div class="an" style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.2);border-radius:20px;padding:6px 14px;margin-bottom:28px;">
+        <div class="pdot"></div>
+        <span style="font-size:10.5px;letter-spacing:2.5px;color:var(--cyan);text-transform:uppercase;font-weight:600;">Real-Time Detection Active</span>
+      </div>
+      <h1 class="hero-t an">GNN-Based<br><em>Money Mule</em><br>Detection System</h1>
+      <div class="sp" style="height:20px;"></div>
+      <p class="an" style="font-size:15px;color:var(--dim);line-height:1.75;max-width:480px;">
+        A Graph Neural Network system that models financial transactions as a connected graph — exposing complex mule rings invisible to traditional channel-by-channel fraud rules.
+      </p>
+      <div class="sp" style="height:36px;"></div>
+      <div class="an" style="display:flex;gap:0;">
+        <div style="padding:14px 24px;border:1px solid var(--border2);">
+          <div style="font-size:26px;font-weight:900;color:var(--cyan);">&lt; 4min</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">Mule ring cycle</div>
+        </div>
+        <div style="padding:14px 24px;border:1px solid var(--border2);border-left:none;">
+          <div style="font-size:26px;font-weight:900;color:var(--red);">0%</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">Traditional detection</div>
+        </div>
+        <div style="padding:14px 24px;border:1px solid var(--border2);border-left:none;border-radius:0 8px 8px 0;">
+          <div style="font-size:26px;font-weight:900;color:var(--gold);">4+</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">Channel blind spots</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 2 — PROBLEM STATEMENT
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s2">
+  <div class="topbar">
+    <div class="topbar-label">Problem Statement</div>
+    <div class="topbar-num">02 / 11</div>
+  </div>
+  <div class="sbody scroll">
+    <h2 class="st an">The <em>Invisible</em> Money Mule Ring</h2>
+    <p class="sub an">How criminals exploit cross-channel blind spots in under 4 minutes</p>
+    <div class="flow an">
+      <div class="fn"><div class="fn-ico">📱</div><div class="fn-label">Mobile App</div><div class="fn-sub">Funds received via UPI</div></div>
+      <div class="fa">→</div>
+      <div class="fn fraud"><div class="fn-ico">👤</div><div class="fn-label">Mule Account A</div><div class="fn-sub">Identity layered</div></div>
+      <div class="fa">→</div>
+      <div class="fn fraud"><div class="fn-ico">👤</div><div class="fn-label">Mule Account B</div><div class="fn-sub">Micro-splits sent</div></div>
+      <div class="fa">→</div>
+      <div class="fn"><div class="fn-ico">💳</div><div class="fn-label">Linked Wallet</div><div class="fn-sub">Funds aggregated</div></div>
+      <div class="fa">→</div>
+      <div class="fn"><div class="fn-ico">🏧</div><div class="fn-label">ATM Cash-Out</div><div class="fn-sub">Untraceable withdrawal</div></div>
+    </div>
+    <div class="g2 an" style="margin-bottom:12px;">
+      <div class="card c-red">
+        <div class="clabel red">Root Cause</div>
+        <div class="ctitle">Siloed Channel Monitoring</div>
+        <div class="cbody">Each payment channel — Mobile, Web, UPI, ATM — generates logs that are monitored in complete isolation. No system joins the dots across channels. A transaction looks perfectly normal in any single silo, yet criminal when viewed as a connected sequence across the full graph.</div>
+      </div>
+      <div class="card c-red">
+        <div class="clabel red">What Gets Missed</div>
+        <div class="ctitle">High-Velocity, Multi-Hop Patterns</div>
+        <div class="cbody">A coordinated mule ring can receive funds via a mobile app, split them into 40 micro-transfers via wallet APIs, and withdraw cash at an ATM in a different city within minutes. By the time a single-channel rule fires, the money has already moved three hops and two channels away.</div>
+      </div>
+    </div>
+    <div class="g3 an">
+      <div class="card"><div class="clabel cyan">Pattern 01 — Smurfing</div><div class="ctitle">Micro-Transaction Fan-Out</div><div class="cbody">One source account distributes a large sum to dozens of mule accounts in small amounts — each individually below any detection threshold, but collectively laundering millions.</div></div>
+      <div class="card"><div class="clabel cyan">Pattern 02 — Cycle Washing</div><div class="ctitle">A → B → C → A Loops</div><div class="cbody">Funds circulate through a ring of accounts over hours to "age" them, obscure the original source, and simulate legitimate account activity before final withdrawal.</div></div>
+      <div class="card"><div class="clabel cyan">Pattern 03 — Layering Cascade</div><div class="ctitle">Cross-Channel Routing</div><div class="cbody">Funds enter via one channel (e.g., UPI), are layered through multiple wallets, and exit via a completely different channel (e.g., ATM) in a different geographic region.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 3 — WHY TRADITIONAL FAILS
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s3">
+  <div class="topbar">
+    <div class="topbar-label">Gap Analysis</div>
+    <div class="topbar-num">03 / 11</div>
+  </div>
+  <div class="sbody scroll">
+    <h2 class="st an">Why Traditional Systems <em>Fail</em></h2>
+    <p class="sub an">Structural limitations that make rule-based engines blind to mule rings</p>
+    <div class="g2 an" style="margin-bottom:12px;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="card c-red"><div class="clabel red">Limitation 01</div><div class="ctitle">Architected in Silos</div><div class="cbody">ATM fraud rules only process ATM logs. Mobile rules only see mobile data. There is zero unified view of a customer's behavior across all channels simultaneously — the fundamental architectural flaw that mule rings exploit.</div></div>
+        <div class="card c-red"><div class="clabel red">Limitation 02</div><div class="ctitle">Threshold-Based, Easily Gamed</div><div class="cbody">Rules like "flag if amount > $9,999" are immediately circumvented by smurfing rings using $200–$500 micro-transfers. Static thresholds are a manual specification of exactly what not to do to avoid detection.</div></div>
+        <div class="card c-red"><div class="clabel red">Limitation 03</div><div class="ctitle">No Network or Relationship Awareness</div><div class="cbody">Rule engines evaluate one transaction row at a time. They have zero concept of connections between accounts, shared devices, overlapping IP addresses, or fund-flow topology — the exact features that define a mule ring.</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="card c-red"><div class="clabel red">Limitation 04</div><div class="ctitle">Always Reactive, Never Predictive</div><div class="cbody">Fraud rules are written only after a pattern has been discovered and documented. There is always a detection lag of weeks to months — by which time the mule ring has already evolved its technique and the rule is obsolete.</div></div>
+        <div class="card c-red"><div class="clabel red">Limitation 05</div><div class="ctitle">Catastrophic Alert Fatigue</div><div class="cbody">Overly broad rules flood analysts with thousands of false positives daily. Investigation teams become desensitized, and real mule ring alerts get buried in noise, deprioritized, or simply missed.</div></div>
+        <div class="card c-gold">
+          <div class="clabel gold">The Detection Gap</div>
+          <div style="display:flex;justify-content:space-around;padding:8px 0;">
+            <div style="text-align:center;"><div style="font-size:28px;font-weight:900;color:var(--red);">0%</div><div style="font-size:10px;color:var(--muted);margin-top:3px;">Cross-channel<br>visibility</div></div>
+            <div style="text-align:center;"><div style="font-size:28px;font-weight:900;color:var(--red);">72h+</div><div style="font-size:10px;color:var(--muted);margin-top:3px;">Avg detection<br>lag</div></div>
+            <div style="text-align:center;"><div style="font-size:28px;font-weight:900;color:var(--red);">94%</div><div style="font-size:10px;color:var(--muted);margin-top:3px;">Alerts are<br>false positives</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 4 — SOLUTION
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s4">
+  <div class="topbar">
+    <div class="topbar-label">Solution Approach</div>
+    <div class="topbar-num">04 / 11</div>
+  </div>
+  <div class="sbody scroll">
+    <h2 class="st an">Graph <em>Intelligence</em> as the Answer</h2>
+    <p class="sub an">Model the entire financial ecosystem as a connected graph — detect fraud through structure, not just values</p>
+    <div class="card c-cyan an" style="margin-bottom:14px;">
+      <div class="clabel cyan">Core Insight</div>
+      <div class="cbody" style="font-size:14.5px;color:var(--text);">Money mule rings are fundamentally a <strong style="color:var(--cyan);">graph problem</strong>. The fraud does not live in any single transaction — it lives in the <strong style="color:var(--cyan);">pattern of connections</strong> between accounts, devices, wallets, and channels. A Graph Neural Network learns these structural signatures end-to-end, making the topology itself the detection signal.</div>
+    </div>
+    <div class="g3 an" style="margin-bottom:12px;">
+      <div class="card c-green"><div class="clabel green">Step 01</div><div class="ctitle">Unify All Channels</div><div class="cbody">Ingest logs from Mobile App, Web Banking, ATM, and UPI into a single unified Entity Graph. Every account, device, and endpoint becomes a node. Every transaction, login, and device-share becomes a typed, timestamped edge.</div></div>
+      <div class="card c-green"><div class="clabel green">Step 02</div><div class="ctitle">Extract Graph Features</div><div class="cbody">For each new transaction, extract its 2–3 hop neighborhood from the graph. Compute relationship-aware features: transaction velocity between hops, account fan-out ratios, PageRank of collector nodes, shared device clusters, impossible travel flags.</div></div>
+      <div class="card c-green"><div class="clabel green">Step 03</div><div class="ctitle">Score with GNN in Real Time</div><div class="cbody">A trained Graph Neural Network scores every new transaction by analyzing its full neighborhood context — returning a fraud probability between 0.0 and 1.0 before the transaction settles, enabling proactive blocking.</div></div>
+    </div>
+    <div class="g2 an">
+      <div class="card"><div class="clabel cyan">The GNN Structural Advantage</div><div class="cbody">Unlike traditional ML models that look at a single row, a GNN examines the entire network surrounding a transaction — 2 to 3 hops of connected entities. It learns that a smurfing ring has a distinctive "star" topology (one source, many targets) and a cycle ring has a circular topology. These shapes are the fingerprints of fraud that no rule can encode.</div></div>
+      <div class="card"><div class="clabel purple">Explainability for Compliance</div><div class="cbody">Every fraud score is accompanied by an explanation identifying exactly which accounts, devices, and transaction edges contributed most to the model's decision. Compliance teams receive a structured, auditable report directly supporting SAR filing requirements — solving the "black box" problem inherent in deep learning.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 5 — ARCHITECTURE DIAGRAM
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s5">
+  <div class="topbar">
+    <div class="topbar-label">System Architecture</div>
+    <div class="topbar-num">05 / 11</div>
+  </div>
+  <div class="sbody" style="padding-bottom:80px;padding-top:16px;">
+    <h2 class="st an" style="margin-bottom:4px;">System <em>Architecture</em></h2>
+    <p class="sub an" style="margin-bottom:12px;">End-to-end layered architecture — from raw transaction logs to real-time fraud alerts</p>
+    <div class="an" style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0;">
+      <svg viewBox="0 0 1000 520" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%;height:100%;max-height:430px;">
+        <defs>
+          <!-- Layer fills -->
+          <linearGradient id="lCyan" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00E5FF" stop-opacity=".18"/><stop offset="100%" stop-color="#00E5FF" stop-opacity=".04"/></linearGradient>
+          <linearGradient id="lGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFB300" stop-opacity=".18"/><stop offset="100%" stop-color="#FFB300" stop-opacity=".04"/></linearGradient>
+          <linearGradient id="lPurp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9C6FFF" stop-opacity=".18"/><stop offset="100%" stop-color="#9C6FFF" stop-opacity=".04"/></linearGradient>
+          <linearGradient id="lGreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00E676" stop-opacity=".18"/><stop offset="100%" stop-color="#00E676" stop-opacity=".04"/></linearGradient>
+          <linearGradient id="lRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF3D57" stop-opacity=".18"/><stop offset="100%" stop-color="#FF3D57" stop-opacity=".04"/></linearGradient>
+          <linearGradient id="lBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2979FF" stop-opacity=".18"/><stop offset="100%" stop-color="#2979FF" stop-opacity=".04"/></linearGradient>
+          <!-- Arrow markers -->
+          <marker id="aG" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#1E2D48"/></marker>
+          <marker id="aC" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#00E5FF"/></marker>
+          <marker id="aGd" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#00E676"/></marker>
+          <marker id="aR" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#FF3D57"/></marker>
+          <marker id="aGold" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#FFB300"/></marker>
+        </defs>
+
+        <!-- ═══ BACKGROUND BANDS (horizontal layers) ═══ -->
+        <!-- Layer 1: Data Sources -->
+        <rect x="10" y="10" width="980" height="118" rx="10" fill="url(#lCyan)" stroke="#00E5FF" stroke-width="1" stroke-opacity=".25"/>
+        <text x="26" y="28" font-family="Outfit,sans-serif" font-size="8.5" fill="#00E5FF" font-weight="700" letter-spacing="3" opacity=".9">LAYER 1 — DATA INGESTION</text>
+
+        <!-- Layer 2: Entity Graph -->
+        <rect x="10" y="142" width="980" height="110" rx="10" fill="url(#lGold)" stroke="#FFB300" stroke-width="1" stroke-opacity=".25"/>
+        <text x="26" y="160" font-family="Outfit,sans-serif" font-size="8.5" fill="#FFB300" font-weight="700" letter-spacing="3" opacity=".9">LAYER 2 — UNIFIED ENTITY GRAPH (NEO4J)</text>
+
+        <!-- Layer 3: Feature Engine -->
+        <rect x="10" y="266" width="980" height="100" rx="10" fill="url(#lPurp)" stroke="#9C6FFF" stroke-width="1" stroke-opacity=".25"/>
+        <text x="26" y="284" font-family="Outfit,sans-serif" font-size="8.5" fill="#9C6FFF" font-weight="700" letter-spacing="3" opacity=".9">LAYER 3 — GRAPH FEATURE ENGINE</text>
+
+        <!-- Layer 4: GNN -->
+        <rect x="10" y="380" width="980" height="100" rx="10" fill="url(#lGreen)" stroke="#00E676" stroke-width="1" stroke-opacity=".25"/>
+        <text x="26" y="398" font-family="Outfit,sans-serif" font-size="8.5" fill="#00E676" font-weight="700" letter-spacing="3" opacity=".9">LAYER 4 — GNN SCORING MODEL</text>
+
+        <!-- Layer 5: Outputs — shown as 3 boxes at bottom -->
+
+        <!-- ═══ LAYER 1: SOURCE NODES ═══ -->
+        <!-- Mobile -->
+        <rect x="38" y="36" width="130" height="76" rx="8" fill="rgba(0,229,255,.08)" stroke="#00E5FF" stroke-width="1" stroke-opacity=".4"/>
+        <text x="103" y="62" font-family="Outfit,sans-serif" font-size="22" text-anchor="middle">📱</text>
+        <text x="103" y="81" font-family="Outfit,sans-serif" font-size="11" fill="#E0F0FF" font-weight="600" text-anchor="middle">Mobile App</text>
+        <text x="103" y="94" font-family="Outfit,sans-serif" font-size="9.5" fill="#5A7090" text-anchor="middle">UPI · Wallet Transfers</text>
+
+        <!-- Web -->
+        <rect x="188" y="36" width="130" height="76" rx="8" fill="rgba(0,229,255,.08)" stroke="#00E5FF" stroke-width="1" stroke-opacity=".4"/>
+        <text x="253" y="62" font-family="Outfit,sans-serif" font-size="22" text-anchor="middle">🌐</text>
+        <text x="253" y="81" font-family="Outfit,sans-serif" font-size="11" fill="#E0F0FF" font-weight="600" text-anchor="middle">Web Banking</text>
+        <text x="253" y="94" font-family="Outfit,sans-serif" font-size="9.5" fill="#5A7090" text-anchor="middle">NEFT · RTGS · IMPS</text>
+
+        <!-- ATM -->
+        <rect x="338" y="36" width="130" height="76" rx="8" fill="rgba(0,229,255,.08)" stroke="#00E5FF" stroke-width="1" stroke-opacity=".4"/>
+        <text x="403" y="62" font-family="Outfit,sans-serif" font-size="22" text-anchor="middle">🏧</text>
+        <text x="403" y="81" font-family="Outfit,sans-serif" font-size="11" fill="#E0F0FF" font-weight="600" text-anchor="middle">ATM Network</text>
+        <text x="403" y="94" font-family="Outfit,sans-serif" font-size="9.5" fill="#5A7090" text-anchor="middle">Cash · Card Withdrawals</text>
+
+        <!-- UPI -->
+        <rect x="488" y="36" width="130" height="76" rx="8" fill="rgba(0,229,255,.08)" stroke="#00E5FF" stroke-width="1" stroke-opacity=".4"/>
+        <text x="553" y="62" font-family="Outfit,sans-serif" font-size="22" text-anchor="middle">📲</text>
+        <text x="553" y="81" font-family="Outfit,sans-serif" font-size="11" fill="#E0F0FF" font-weight="600" text-anchor="middle">UPI / IMPS</text>
+        <text x="553" y="94" font-family="Outfit,sans-serif" font-size="9.5" fill="#5A7090" text-anchor="middle">P2P Instant Transfers</text>
+
+        <!-- Device Telemetry -->
+        <rect x="638" y="36" width="150" height="76" rx="8" fill="rgba(0,229,255,.05)" stroke="#00E5FF" stroke-width="1" stroke-opacity=".25" stroke-dasharray="4,3"/>
+        <text x="713" y="62" font-family="Outfit,sans-serif" font-size="22" text-anchor="middle">🖥️</text>
+        <text x="713" y="81" font-family="Outfit,sans-serif" font-size="11" fill="#E0F0FF" font-weight="600" text-anchor="middle">Device Telemetry</text>
+        <text x="713" y="94" font-family="Outfit,sans-serif" font-size="9.5" fill="#5A7090" text-anchor="middle">OS · Root status · Fingerprint</text>
+
+        <!-- Login / IP -->
+        <rect x="808" y="36" width="170" height="76" rx="8" fill="rgba(0,229,255,.05)" stroke="#00E5FF" stroke-width="1" stroke-opacity=".25" stroke-dasharray="4,3"/>
+        <text x="893" y="62" font-family="Outfit,sans-serif" font-size="22" text-anchor="middle">🌍</text>
+        <text x="893" y="81" font-family="Outfit,sans-serif" font-size="11" fill="#E0F0FF" font-weight="600" text-anchor="middle">Login / IP Events</text>
+        <text x="893" y="94" font-family="Outfit,sans-serif" font-size="9.5" fill="#5A7090" text-anchor="middle">Geo-coords · Session data</text>
+
+        <!-- ═══ LAYER 1 → LAYER 2 ARROWS ═══ -->
+        <line x1="103" y1="112" x2="103" y2="142" stroke="#1E2D48" stroke-width="1.5" marker-end="url(#aG)"/>
+        <line x1="253" y1="112" x2="253" y2="142" stroke="#1E2D48" stroke-width="1.5" marker-end="url(#aG)"/>
+        <line x1="403" y1="112" x2="403" y2="142" stroke="#1E2D48" stroke-width="1.5" marker-end="url(#aG)"/>
+        <line x1="553" y1="112" x2="553" y2="142" stroke="#1E2D48" stroke-width="1.5" marker-end="url(#aG)"/>
+        <line x1="713" y1="112" x2="713" y2="142" stroke="#1E2D48" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#aG)"/>
+        <line x1="893" y1="112" x2="893" y2="142" stroke="#1E2D48" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#aG)"/>
+
+        <!-- ═══ LAYER 2: ENTITY GRAPH CONTENTS ═══ -->
+        <!-- Node type labels -->
+        <!-- USER nodes row -->
+        <circle cx="160" cy="200" r="22" fill="rgba(255,179,0,.12)" stroke="#FFB300" stroke-width="1.5"/>
+        <text x="160" y="204" font-family="Outfit,sans-serif" font-size="10" fill="#FFB300" font-weight="700" text-anchor="middle">USER</text>
+        <circle cx="280" cy="185" r="18" fill="rgba(255,179,0,.1)" stroke="#FFB300" stroke-width="1.2"/>
+        <text x="280" y="189" font-family="Outfit,sans-serif" font-size="9" fill="#FFB300" font-weight="700" text-anchor="middle">USR</text>
+        <circle cx="390" cy="210" r="18" fill="rgba(255,179,0,.1)" stroke="#FFB300" stroke-width="1.2"/>
+        <text x="390" y="214" font-family="Outfit,sans-serif" font-size="9" fill="#FFB300" font-weight="700" text-anchor="middle">USR</text>
+
+        <!-- DEVICE nodes -->
+        <rect x="205" y="207" width="44" height="26" rx="5" fill="rgba(0,229,255,.1)" stroke="#00E5FF" stroke-width="1.2"/>
+        <text x="227" y="224" font-family="Outfit,sans-serif" font-size="9" fill="#00E5FF" font-weight="700" text-anchor="middle">DEV</text>
+        <rect x="445" y="195" width="44" height="26" rx="5" fill="rgba(0,229,255,.1)" stroke="#00E5FF" stroke-width="1.2"/>
+        <text x="467" y="212" font-family="Outfit,sans-serif" font-size="9" fill="#00E5FF" font-weight="700" text-anchor="middle">DEV</text>
+
+        <!-- WALLET / ATM nodes -->
+        <rect x="310" y="213" width="52" height="26" rx="5" fill="rgba(0,230,118,.1)" stroke="#00E676" stroke-width="1.2"/>
+        <text x="336" y="230" font-family="Outfit,sans-serif" font-size="9" fill="#00E676" font-weight="700" text-anchor="middle">WLT</text>
+        <rect x="510" y="215" width="52" height="26" rx="5" fill="rgba(0,230,118,.1)" stroke="#00E676" stroke-width="1.2"/>
+        <text x="536" y="232" font-family="Outfit,sans-serif" font-size="9" fill="#00E676" font-weight="700" text-anchor="middle">ATM</text>
+
+        <!-- IP node -->
+        <circle cx="620" cy="200" r="18" fill="rgba(156,111,255,.1)" stroke="#9C6FFF" stroke-width="1.2"/>
+        <text x="620" y="204" font-family="Outfit,sans-serif" font-size="9" fill="#9C6FFF" font-weight="700" text-anchor="middle">IP</text>
+
+        <!-- Graph EDGES (TRANSFERRED_TO, LOGGED_IN_WITH, SHARES_DEVICE) -->
+        <line x1="179" y1="198" x2="210" y2="216" stroke="#FFB300" stroke-width="1.2" stroke-opacity=".6"/>
+        <line x1="249" y1="197" x2="229" y2="212" stroke="#FFB300" stroke-width="1" stroke-opacity=".5"/>
+        <line x1="247" y1="188" x2="315" y2="220" stroke="#FFB300" stroke-width="1" stroke-opacity=".4"/>
+        <line x1="296" y1="192" x2="318" y2="215" stroke="#FFB300" stroke-width="1.2" stroke-opacity=".6"/>
+        <line x1="405" y1="205" x2="452" y2="206" stroke="#00E5FF" stroke-width="1" stroke-opacity=".5"/>
+        <line x1="405" y1="215" x2="515" y2="222" stroke="#FFB300" stroke-width="1.2" stroke-opacity=".5"/>
+        <line x1="362" y1="202" x2="325" y2="220" stroke="#FFB300" stroke-width="1" stroke-opacity=".5"/>
+        <line x1="356" y1="210" x2="470" y2="208" stroke="#00E5FF" stroke-width="1" stroke-opacity=".4" stroke-dasharray="3,2"/>
+        <line x1="600" y1="205" x2="560" y2="220" stroke="#9C6FFF" stroke-width="1" stroke-opacity=".4"/>
+
+        <!-- Edge labels -->
+        <text x="240" y="185" font-family="Outfit,sans-serif" font-size="7.5" fill="#FFB300" text-anchor="middle" opacity=".7">TRANSFERRED_TO</text>
+        <text x="430" y="198" font-family="Outfit,sans-serif" font-size="7.5" fill="#00E5FF" text-anchor="middle" opacity=".7">LOGGED_IN_WITH</text>
+        <text x="580" y="210" font-family="Outfit,sans-serif" font-size="7.5" fill="#9C6FFF" text-anchor="middle" opacity=".7">SHARES_DEVICE</text>
+
+        <!-- Neo4j label -->
+        <text x="800" y="185" font-family="Outfit,sans-serif" font-size="11" fill="#FFB300" font-weight="700" text-anchor="middle">Neo4j</text>
+        <text x="800" y="200" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">Property Graph Database</text>
+        <text x="800" y="215" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">Bolt Protocol · Cypher Queries</text>
+        <rect x="730" y="170" width="140" height="60" rx="8" fill="rgba(255,179,0,.06)" stroke="rgba(255,179,0,.3)" stroke-width="1"/>
+
+        <!-- ═══ LAYER 2 → LAYER 3 ARROWS ═══ -->
+        <line x1="400" y1="252" x2="400" y2="266" stroke="#9C6FFF" stroke-width="1.5" marker-end="url(#aG)"/>
+        <text x="420" y="262" font-family="Outfit,sans-serif" font-size="8.5" fill="#5A7090">N-Hop Subgraph Extract</text>
+
+        <!-- ═══ LAYER 3: FEATURE ENGINE ═══ -->
+        <!-- NetworkX box -->
+        <rect x="38" y="290" width="200" height="62" rx="8" fill="rgba(156,111,255,.08)" stroke="#9C6FFF" stroke-width="1" stroke-opacity=".4"/>
+        <text x="138" y="310" font-family="Outfit,sans-serif" font-size="11" fill="#fff" font-weight="700" text-anchor="middle">NetworkX</text>
+        <text x="138" y="325" font-family="Outfit,sans-serif" font-size="9.5" fill="#5A7090" text-anchor="middle">Subgraph Manipulation in Memory</text>
+        <text x="138" y="340" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">DiGraph · Directed Graph Processing</text>
+
+        <!-- Features computed -->
+        <rect x="258" y="290" width="230" height="62" rx="8" fill="rgba(156,111,255,.06)" stroke="#9C6FFF" stroke-width="1" stroke-opacity=".3"/>
+        <text x="265" y="308" font-family="Outfit,sans-serif" font-size="9" fill="#9C6FFF" font-weight="700" letter-spacing="1">TOPOLOGICAL FEATURES</text>
+        <text x="265" y="322" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">▸ Localized PageRank (collector wallets)</text>
+        <text x="265" y="334" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">▸ In-Degree / Out-Degree Ratio</text>
+        <text x="265" y="346" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">▸ Louvain Community Detection</text>
+
+        <rect x="508" y="290" width="230" height="62" rx="8" fill="rgba(156,111,255,.06)" stroke="#9C6FFF" stroke-width="1" stroke-opacity=".3"/>
+        <text x="515" y="308" font-family="Outfit,sans-serif" font-size="9" fill="#9C6FFF" font-weight="700" letter-spacing="1">TEMPORAL / SPATIAL FEATURES</text>
+        <text x="515" y="322" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">▸ Impossible Travel (Haversine velocity)</text>
+        <text x="515" y="334" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">▸ Transaction Velocity (time-per-hop)</text>
+        <text x="515" y="346" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">▸ Bot Detection (copy-paste timing)</text>
+
+        <!-- PyG tensor box -->
+        <rect x="758" y="290" width="220" height="62" rx="8" fill="rgba(0,230,118,.06)" stroke="#00E676" stroke-width="1" stroke-opacity=".3"/>
+        <text x="868" y="310" font-family="Outfit,sans-serif" font-size="11" fill="#fff" font-weight="700" text-anchor="middle">PyG Data Tensor</text>
+        <text x="868" y="325" font-family="Outfit,sans-serif" font-size="9.5" fill="#5A7090" text-anchor="middle">Node feature matrix X (N × 12)</text>
+        <text x="868" y="340" font-family="Outfit,sans-serif" font-size="9.5" fill="#5A7090" text-anchor="middle">Edge index + edge attributes</text>
+
+        <!-- Feature arrows -->
+        <line x1="238" y1="321" x2="258" y2="321" stroke="#9C6FFF" stroke-width="1" marker-end="url(#aG)"/>
+        <line x1="488" y1="321" x2="508" y2="321" stroke="#9C6FFF" stroke-width="1" marker-end="url(#aG)"/>
+        <line x1="738" y1="321" x2="758" y2="321" stroke="#00E676" stroke-width="1" marker-end="url(#aGd)"/>
+
+        <!-- ═══ LAYER 3 → LAYER 4 ARROWS ═══ -->
+        <line x1="400" y1="352" x2="400" y2="380" stroke="#00E676" stroke-width="1.5" marker-end="url(#aG)"/>
+        <text x="418" y="370" font-family="Outfit,sans-serif" font-size="8.5" fill="#5A7090">Enriched subgraphs as tensors</text>
+
+        <!-- ═══ LAYER 4: GNN MODEL ═══ -->
+        <!-- Architecture -->
+        <rect x="38" y="404" width="200" height="62" rx="8" fill="rgba(0,230,118,.08)" stroke="#00E676" stroke-width="1" stroke-opacity=".4"/>
+        <text x="138" y="422" font-family="Outfit,sans-serif" font-size="11" fill="#fff" font-weight="700" text-anchor="middle">GraphSAGE + GAT</text>
+        <text x="138" y="437" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">Multi-layer GNN Architecture</text>
+        <text x="138" y="450" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">SAGEConv → GATConv → SAGEConv</text>
+        <text x="138" y="462" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">PyTorch Geometric (PyG)</text>
+
+        <!-- Inductive learning note -->
+        <rect x="258" y="404" width="200" height="62" rx="8" fill="rgba(0,230,118,.06)" stroke="#00E676" stroke-width="1" stroke-opacity=".3"/>
+        <text x="268" y="422" font-family="Outfit,sans-serif" font-size="9" fill="#00E676" font-weight="700" letter-spacing="1">LEARNING STRATEGY</text>
+        <text x="268" y="436" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">▸ Inductive learning (new nodes)</text>
+        <text x="268" y="448" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">▸ Neighbor aggregation (SAGE)</text>
+        <text x="268" y="460" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">▸ Attention weights (GAT heads)</text>
+
+        <!-- Score output -->
+        <rect x="480" y="404" width="180" height="62" rx="8" fill="rgba(0,230,118,.08)" stroke="#00E676" stroke-width="1.5" stroke-opacity=".5"/>
+        <text x="570" y="426" font-family="Outfit,sans-serif" font-size="11" fill="#00E676" font-weight="700" text-anchor="middle">Fraud Score</text>
+        <text x="570" y="444" font-family="Outfit,sans-serif" font-size="28" fill="#fff" font-weight="900" text-anchor="middle">0.0 → 1.0</text>
+        <text x="570" y="462" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">Per-transaction probability</text>
+
+        <!-- Output arrows to 3 destinations -->
+        <!-- Block -->
+        <line x1="660" y1="435" x2="700" y2="435" stroke="#FF3D57" stroke-width="1.5" marker-end="url(#aR)"/>
+        <rect x="700" y="415" width="140" height="40" rx="6" fill="rgba(255,61,87,.08)" stroke="#FF3D57" stroke-width="1" stroke-opacity=".4"/>
+        <text x="770" y="432" font-family="Outfit,sans-serif" font-size="10" fill="#FF3D57" font-weight="700" text-anchor="middle">🚨 Block Transaction</text>
+        <text x="770" y="447" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">Score > 0.9 → Immediate block</text>
+
+        <!-- Alert queue -->
+        <line x1="770" y1="455" x2="770" y2="468" stroke="#FFB300" stroke-width="1" marker-end="url(#aGold)"/>
+        <rect x="700" y="468" width="140" height="36" rx="6" fill="rgba(255,179,0,.06)" stroke="#FFB300" stroke-width="1" stroke-opacity=".4"/>
+        <text x="770" y="483" font-family="Outfit,sans-serif" font-size="10" fill="#FFB300" font-weight="700" text-anchor="middle">📋 Alert Queue</text>
+        <text x="770" y="496" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">Score 0.7–0.9 → Analyst review</text>
+
+        <!-- Explainer -->
+        <line x1="870" y1="435" x2="910" y2="435" stroke="#9C6FFF" stroke-width="1.5" marker-end="url(#aG)"/>
+        <rect x="910" y="415" width="76" height="40" rx="6" fill="rgba(156,111,255,.08)" stroke="#9C6FFF" stroke-width="1" stroke-opacity=".4"/>
+        <text x="948" y="432" font-family="Outfit,sans-serif" font-size="10" fill="#9C6FFF" font-weight="700" text-anchor="middle">🔍 XAI</text>
+        <text x="948" y="447" font-family="Outfit,sans-serif" font-size="9" fill="#5A7090" text-anchor="middle">Explainer</text>
+
+        <!-- ═══ LEGEND ═══ -->
+        <rect x="10" y="495" width="980" height="22" rx="5" fill="rgba(11,18,32,.8)" stroke="#162035" stroke-width="1"/>
+        <circle cx="32" cy="506" r="4" fill="rgba(0,229,255,.3)" stroke="#00E5FF" stroke-width="1"/>
+        <text x="42" y="510" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">Data Sources</text>
+        <circle cx="118" cy="506" r="4" fill="rgba(255,179,0,.3)" stroke="#FFB300" stroke-width="1"/>
+        <text x="128" y="510" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">Graph Nodes</text>
+        <circle cx="204" cy="506" r="4" fill="rgba(156,111,255,.3)" stroke="#9C6FFF" stroke-width="1"/>
+        <text x="214" y="510" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">Feature Compute</text>
+        <circle cx="302" cy="506" r="4" fill="rgba(0,230,118,.3)" stroke="#00E676" stroke-width="1"/>
+        <text x="312" y="510" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">GNN Model</text>
+        <line x1="385" y1="504" x2="405" y2="508" stroke="#1E2D48" stroke-width="1.5"/>
+        <polygon points="403,505,410,508,403,511" fill="#1E2D48"/>
+        <text x="416" y="510" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">Hard data flow</text>
+        <line x1="500" y1="506" x2="520" y2="506" stroke="#1E2D48" stroke-width="1" stroke-dasharray="3,2"/>
+        <polygon points="518,503,525,506,518,509" fill="#1E2D48"/>
+        <text x="530" y="510" font-family="Outfit,sans-serif" font-size="9" fill="#8A9EB8">Soft / enrichment flow</text>
+        <text x="980" y="510" font-family="Outfit,sans-serif" font-size="8.5" fill="#1E2D48" text-anchor="end">GNN Money Mule Detection · Architecture v2</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 6 — ENTITY GRAPH
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s6">
+  <div class="topbar">
+    <div class="topbar-label">Data Model</div>
+    <div class="topbar-num">06 / 11</div>
+  </div>
+  <div class="sbody scroll">
+    <h2 class="st an">The <em>Entity Graph</em> Data Model</h2>
+    <p class="sub an">All financial entities become nodes; all events become typed, timestamped edges</p>
+    <div class="g2 an">
+      <div>
+        <p style="font-size:10px;color:var(--muted);letter-spacing:3px;font-family:'JetBrains Mono',monospace;margin-bottom:12px;">NODE TYPES</p>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div class="card"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">👤</span><div><div class="ctitle" style="margin:0 0 3px;">User Account</div><div class="cbody">Account age, KYC verification score, average monthly balance, signup channel, country code. The primary actor in the graph.</div></div></div></div>
+          <div class="card"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">📱</span><div><div class="ctitle" style="margin:0 0 3px;">Device</div><div class="cbody">Device ID, OS type, <strong style="color:var(--red);">is_rooted / emulated flag</strong>, device fingerprint, first-seen timestamp. A rooted device shared across multiple accounts is a primary mule signal.</div></div></div></div>
+          <div class="card"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">💳</span><div><div class="ctitle" style="margin:0 0 3px;">Wallet / ATM Endpoint</div><div class="cbody">Endpoint ID, geographic risk zone, operator type, daily transaction count. High-risk endpoints in unusual regions are key withdrawal indicators.</div></div></div></div>
+          <div class="card"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">🌐</span><div><div class="ctitle" style="margin:0 0 3px;">IP Address</div><div class="cbody">ASN, VPN/Tor flags, country, latitude/longitude. Powers impossible travel detection and anonymized routing alerts.</div></div></div></div>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:10px;color:var(--muted);letter-spacing:3px;font-family:'JetBrains Mono',monospace;margin-bottom:12px;">EDGE TYPES</p>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div class="card c-cyan"><div class="clabel cyan">TRANSFERRED_TO</div><div class="cbody">Transaction ID, amount, timestamp, channel, <strong style="color:var(--cyan);">is_fraud label</strong>. The core edge — every fund movement in the system. Carries temporal velocity and channel metadata for the feature engine.</div></div>
+          <div class="card c-cyan"><div class="clabel cyan">LOGGED_IN_WITH</div><div class="cbody">Timestamp, IP address, <strong style="color:var(--cyan);">distance_from_last_login_km</strong>, session duration. When combined with login timestamps, this edge powers the impossible travel velocity calculator — flagging accounts active in two cities simultaneously.</div></div>
+          <div class="card c-cyan"><div class="clabel cyan">SHARES_DEVICE</div><div class="cbody">When two or more user accounts use the same device ID, a SHARES_DEVICE edge is created between them. A single device shared across 5+ accounts is one of the strongest known mule network indicators.</div></div>
+          <div class="card c-gold"><div class="clabel gold">Why Edges Matter as Much as Nodes</div><div class="cbody">Each edge carries its own typed metadata. The GNN learns from both node attributes AND edge patterns — making it impossible to evade detection simply by creating fresh accounts, because the structural relationships still betray the ring topology.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 7 — MODULE 1 + 2
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s7">
+  <div class="topbar">
+    <div class="topbar-label">System Modules — 01 & 02</div>
+    <div class="topbar-num">07 / 11</div>
+  </div>
+  <div class="sbody scroll">
+    <h2 class="st an">Modules <em>01 & 02</em></h2>
+    <p class="sub an">Data generation and graph feature extraction — the foundation of the detection pipeline</p>
+    <div class="g2 an" style="margin-bottom:14px;">
+      <div class="mod">
+        <div class="mod-head" style="background:rgba(0,229,255,.06);">
+          <div class="mod-ico" style="background:rgba(0,229,255,.14);">⚙️</div>
+          <div><div class="mod-name">Module 01 — Adversarial Data Simulator</div><div class="mod-file">simulator.py</div></div>
+        </div>
+        <div class="mod-body">
+          <p>Acts as the continuous data ingestion engine, populating the Neo4j graph database with both legitimate financial traffic and highly evasive, complex fraud networks using realistic synthetic data generation.</p>
+          <p style="margin-bottom:6px;color:var(--cyan);font-size:11.5px;font-weight:600;letter-spacing:1px;">SYNTHETIC BEHAVIORAL TELEMETRY</p>
+          <p>Assigns rich metadata to every node and edge: <strong style="color:var(--text);">time-to-transaction speeds</strong> (identifying copy-paste bot behavior where a user completes a form in under a second), synthetic latitude/longitude to IP login events, and randomly flags a subset of Device nodes with endpoint security alerts such as <strong style="color:var(--red);">is_rooted = True</strong> and anomalous OS states.</p>
+          <p style="margin-bottom:6px;color:var(--cyan);font-size:11.5px;font-weight:600;letter-spacing:1px;">ADVERSARIAL RING INJECTION</p>
+          <p>Uses complex Cypher queries to programmatically inject advanced laundering topologies directly into Neo4j. <strong style="color:var(--text);">Smurfing rings</strong> break large deposits into dozens of micro-transactions below detection thresholds. <strong style="color:var(--text);">Cyclic networks</strong> loop money A→B→C→A to age funds and obscure the source. All injected edges are labeled <code style="background:rgba(255,61,87,.1);color:var(--red);padding:1px 5px;border-radius:3px;font-size:10px;">is_fraud = True</code>.</p>
+          <div class="mod-tags"><span class="tag cyan">Neo4j Driver</span><span class="tag gold">Faker</span><span class="tag red">Fraud Injection</span><span class="tag purple">Telemetry</span></div>
+        </div>
+      </div>
+      <div class="mod">
+        <div class="mod-head" style="background:rgba(156,111,255,.06);">
+          <div class="mod-ico" style="background:rgba(156,111,255,.14);">🔬</div>
+          <div><div class="mod-name">Module 02 — Graph Feature Engine</div><div class="mod-file">feature_engine.py</div></div>
+        </div>
+        <div class="mod-body">
+          <p>Acts as the bridge between the Neo4j graph database and the ML model. It extracts raw subgraphs for any given transaction and calculates complex mathematical and spatial relationships in-memory using NetworkX.</p>
+          <p style="margin-bottom:6px;color:var(--purple);font-size:11.5px;font-weight:600;letter-spacing:1px;">IMPOSSIBLE TRAVEL DETECTION</p>
+          <p>Processes the synthetic login telemetry from Module 01. Calculates the <strong style="color:var(--text);">Haversine distance</strong> between sequential geo-coordinates of user logins. If the implied travel speed exceeds physical limits (e.g., Mumbai to London in 10 minutes), it generates a high-risk tensor feature indicating account sharing or credential theft within a mule ring.</p>
+          <p style="margin-bottom:6px;color:var(--purple);font-size:11.5px;font-weight:600;letter-spacing:1px;">ADVANCED TOPOLOGICAL METRICS</p>
+          <p>Calculates structural metrics on the local neighborhood: <strong style="color:var(--text);">localized PageRank</strong> to find central "collector" wallets, <strong style="color:var(--text);">Louvain Community Detection</strong> to isolate tight-knit suspicious clusters, and <strong style="color:var(--text);">In-Degree to Out-Degree ratios</strong> to flag accounts that receive from many sources but funnel to only one — the classic smurfing collector profile.</p>
+          <div class="mod-tags"><span class="tag purple">NetworkX</span><span class="tag cyan">Haversine</span><span class="tag gold">PageRank</span><span class="tag green">Louvain</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 8 — MODULE 3 + 4
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s8">
+  <div class="topbar">
+    <div class="topbar-label">System Modules — 03 & 04</div>
+    <div class="topbar-num">08 / 11</div>
+  </div>
+  <div class="sbody scroll">
+    <h2 class="st an">Modules <em>03 & 04</em></h2>
+    <p class="sub an">The GNN brain and the compliance explainability engine</p>
+    <div class="g2 an">
+      <div class="mod">
+        <div class="mod-head" style="background:rgba(0,230,118,.06);">
+          <div class="mod-ico" style="background:rgba(0,230,118,.14);">🧠</div>
+          <div><div class="mod-name">Module 03 — GNN Scoring Model</div><div class="mod-file">gnn_model.py</div></div>
+        </div>
+        <div class="mod-body">
+          <p>The core machine learning pipeline built using PyTorch Geometric. It ingests the mathematically enriched subgraphs from the Feature Engine and learns the structural signatures of money mule networks through dynamic representation learning.</p>
+          <p style="margin-bottom:6px;color:var(--green);font-size:11.5px;font-weight:600;letter-spacing:1px;">GRAPHSAGE + GAT HYBRID ARCHITECTURE</p>
+          <p>Implements a multi-layer <strong style="color:var(--text);">GraphSAGE</strong> architecture for inductive learning — enabling scoring of completely new, unseen account subgraphs without retraining. Combined with <strong style="color:var(--text);">Graph Attention Network (GAT)</strong> layers that learn which specific neighbors (e.g., the rooted device, the micro-transfer cluster) are most informative for the fraud decision.</p>
+          <p style="margin-bottom:6px;color:var(--green);font-size:11.5px;font-weight:600;letter-spacing:1px;">REAL-TIME INFERENCE & SCORING</p>
+          <p>Converts the NetworkX subgraphs into PyG Data tensors containing node feature matrices, edge indices, and edge attributes. Processes the full neighborhood context — topology, telemetry, and transaction metadata — to output a <strong style="color:var(--green);">continuous risk probability score from 0.0 to 1.0</strong> for every new transaction edge in near real time.</p>
+          <div class="mod-tags"><span class="tag green">GraphSAGE</span><span class="tag purple">GAT</span><span class="tag cyan">PyTorch Geometric</span><span class="tag gold">Inductive</span></div>
+        </div>
+      </div>
+      <div class="mod">
+        <div class="mod-head" style="background:rgba(255,61,87,.06);">
+          <div class="mod-ico" style="background:rgba(255,61,87,.14);">🔍</div>
+          <div><div class="mod-name">Module 04 — Compliance & XAI Engine</div><div class="mod-file">explainer.py</div></div>
+        </div>
+        <div class="mod-body">
+          <p>Solves the critical "black box" problem inherent in deep learning models — ensuring every fraud decision can be fully audited by financial compliance teams and regulatory bodies without requiring ML expertise.</p>
+          <p style="margin-bottom:6px;color:var(--red);font-size:11.5px;font-weight:600;letter-spacing:1px;">GNNEXPLAINER INTEGRATION</p>
+          <p>When the GNN scores a transaction above the high-risk threshold (e.g., &gt; 0.9 mule probability), this module is automatically triggered. It uses PyTorch Geometric's <strong style="color:var(--text);">GNNExplainer</strong> to reverse-engineer the model's decision — computing importance masks across all nodes and edges in the subgraph to identify the exact structural features that drove the prediction.</p>
+          <p style="margin-bottom:6px;color:var(--red);font-size:11.5px;font-weight:600;letter-spacing:1px;">INTERPRETABLE COMPLIANCE REPORTS</p>
+          <p>Outputs a structured, human-readable report identifying exactly <strong style="color:var(--text);">which nodes</strong> (e.g., "Rooted Android emulator DEV-771 shared across 4 accounts") and <strong style="color:var(--text);">which edges</strong> (e.g., "Sequence of 50 smurfing micro-transfers within 3 minutes") forced the model to flag the transaction — directly supporting SAR filing and regulatory audit requirements.</p>
+          <div class="mod-tags"><span class="tag red">GNNExplainer</span><span class="tag gold">SAR Ready</span><span class="tag cyan">Audit Trail</span><span class="tag purple">Compliance</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 9 — TECHNOLOGY STACK
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s9">
+  <div class="topbar">
+    <div class="topbar-label">Technology Stack</div>
+    <div class="topbar-num">09 / 11</div>
+  </div>
+  <div class="sbody scroll">
+    <h2 class="st an">Technology <em>Stack</em></h2>
+    <p class="sub an">Purpose-built tools matched to each layer of the pipeline</p>
+    <div class="g2 an" style="margin-bottom:14px;">
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div class="tech"><div class="tech-ico" style="background:rgba(255,179,0,.12);">🗄️</div><div style="flex:1;"><div class="tech-name">Neo4j Community Edition</div><div class="tech-role">Graph Database — stores the unified Entity Graph; Cypher queries extract n-hop subgraphs around any transaction in milliseconds</div></div><span class="tag gold">Storage</span></div>
+        <div class="tech"><div class="tech-ico" style="background:rgba(0,229,255,.12);">🐍</div><div style="flex:1;"><div class="tech-name">Python (Core Runtime)</div><div class="tech-role">All four modules are Python-based; interfaces with Neo4j via the official Bolt driver; orchestrates the full simulation pipeline</div></div><span class="tag cyan">Runtime</span></div>
+        <div class="tech"><div class="tech-ico" style="background:rgba(156,111,255,.12);">🔗</div><div style="flex:1;"><div class="tech-name">NetworkX</div><div class="tech-role">In-memory graph manipulation for extracted subgraphs; computes all topological features — PageRank, Louvain, degree ratios, centrality</div></div><span class="tag purple">Graph</span></div>
+        <div class="tech"><div class="tech-ico" style="background:rgba(0,230,118,.12);">🧠</div><div style="flex:1;"><div class="tech-name">PyTorch Geometric (PyG)</div><div class="tech-role">GNN training and inference; implements GraphSAGE + GAT architecture; provides GNNExplainer for the compliance module</div></div><span class="tag green">ML / XAI</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div class="tech"><div class="tech-ico" style="background:rgba(255,179,0,.12);">📦</div><div style="flex:1;"><div class="tech-name">Faker + Pandas</div><div class="tech-role">Synthetic data generation for users, devices, transactions, and behavioral telemetry; used in simulator.py to create the training population</div></div><span class="tag gold">Data Gen</span></div>
+        <div class="tech"><div class="tech-ico" style="background:rgba(0,229,255,.12);">⚡</div><div style="flex:1;"><div class="tech-name">FastAPI + Uvicorn</div><div class="tech-role">REST API server exposing /score/transaction and /explain/{txn_id} endpoints for upstream integration with live payment systems</div></div><span class="tag cyan">API</span></div>
+        <div class="tech"><div class="tech-ico" style="background:rgba(156,111,255,.12);">📊</div><div style="flex:1;"><div class="tech-name">Streamlit + PyVis</div><div class="tech-role">Live analyst dashboard displaying the transaction graph, fraud alert queue, model performance metrics, and interactive ring visualizations</div></div><span class="tag purple">Dashboard</span></div>
+        <div class="tech"><div class="tech-ico" style="background:rgba(0,230,118,.12);">📈</div><div style="flex:1;"><div class="tech-name">MLflow (Local Mode)</div><div class="tech-role">Local experiment tracking — logs model versions, F1 scores, AUC curves, and hyperparameter runs without any cloud infrastructure</div></div><span class="tag green">Tracking</span></div>
+      </div>
+    </div>
+    <div class="card c-cyan an">
+      <div class="clabel cyan">Design Principle</div>
+      <div class="cbody">Each tool is selected for exactly one job in the pipeline. Neo4j stores the graph. NetworkX manipulates subgraphs in memory. PyTorch Geometric trains the model. FastAPI exposes it in real time. This clean separation ensures any individual component can be upgraded or swapped independently as the system scales beyond the simulation environment.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 10 — IMPLEMENTATION ROADMAP
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s10">
+  <div class="topbar">
+    <div class="topbar-label">Implementation Plan</div>
+    <div class="topbar-num">10 / 11</div>
+  </div>
+  <div class="sbody scroll">
+    <h2 class="st an">Implementation <em>Roadmap</em></h2>
+    <p class="sub an" style="margin-bottom:20px;">Six sequential phases — from environment setup to a fully live, operational detection system</p>
+    <div class="g2 an">
+      <div class="phases">
+        <div class="phase">
+          <div class="ph-dot" style="border-color:var(--cyan);color:var(--cyan);">1</div>
+          <div><div class="ph-title">Foundation & Environment</div><div class="ph-desc">Install and configure Neo4j Community Edition. Set up Python virtual environment and install all dependencies. Verify the Bolt driver connection and run the graph schema Cypher script to create all node constraints and relationship indexes.</div></div>
+        </div>
+        <div class="phase">
+          <div class="ph-dot" style="border-color:var(--gold);color:var(--gold);">2</div>
+          <div><div class="ph-title">Data Simulation (simulator.py)</div><div class="ph-desc">Build the continuous data generator using Faker and Pandas. Implement the normal traffic baseline across all four channels. Add adversarial ring injectors — smurfing fan-out patterns, A→B→C→A cycle washers, and cross-channel layering cascades — with is_fraud labels on all injected edges.</div></div>
+        </div>
+        <div class="phase">
+          <div class="ph-dot" style="border-color:var(--purple);color:var(--purple);">3</div>
+          <div><div class="ph-title">Graph Feature Engine (feature_engine.py)</div><div class="ph-desc">Write Cypher queries to extract n-hop neighborhoods. Implement NetworkX subgraph conversion and compute all topological features: PageRank, Louvain communities, degree ratios, Haversine impossible travel velocity, transaction hop timing, and bot detection via time-to-transaction speed. Output enriched PyG Data tensors.</div></div>
+        </div>
+      </div>
+      <div class="phases">
+        <div class="phase">
+          <div class="ph-dot" style="border-color:var(--green);color:var(--green);">4</div>
+          <div><div class="ph-title">GNN Model Training (gnn_model.py)</div><div class="ph-desc">Implement the GraphSAGE + GAT hybrid architecture in PyTorch Geometric. Build the training loop with weighted loss function to handle class imbalance. Train on the simulated historical dataset, evaluate on a held-out temporal test split, and save the best model checkpoint. Track all experiments with MLflow locally.</div></div>
+        </div>
+        <div class="phase">
+          <div class="ph-dot" style="border-color:var(--red);color:var(--red);">5</div>
+          <div><div class="ph-title">Explainability & Compliance (explainer.py)</div><div class="ph-desc">Integrate PyTorch Geometric's GNNExplainer for all transactions scoring above the high-risk threshold. Map node and edge importance masks back to Neo4j entity IDs. Generate structured JSON compliance reports containing top contributing nodes, top contributing edges, matched pattern label, and recommended action. Write all reports back to Neo4j as ExplanationReport nodes.</div></div>
+        </div>
+        <div class="phase">
+          <div class="ph-dot" style="border-color:var(--cyan);color:var(--cyan);">6</div>
+          <div><div class="ph-title">API, Dashboard & Live Integration</div><div class="ph-desc">Build the FastAPI scoring endpoint connecting all modules into a single synchronous pipeline. Deploy the Streamlit analyst dashboard with interactive PyVis graph visualization, real-time alert queue management, model performance charts, and analyst feedback loop that writes accepted/rejected labels back to Neo4j for continuous model improvement.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="g4 an" style="margin-top:18px;">
+      <div class="card" style="text-align:center;padding:12px;"><div style="font-size:18px;font-weight:900;color:var(--cyan);">Phase 1–2</div><div style="font-size:10px;color:var(--muted);margin-top:3px;">Data & Infrastructure</div></div>
+      <div class="card" style="text-align:center;padding:12px;"><div style="font-size:18px;font-weight:900;color:var(--purple);">Phase 3</div><div style="font-size:10px;color:var(--muted);margin-top:3px;">Graph Intelligence</div></div>
+      <div class="card" style="text-align:center;padding:12px;"><div style="font-size:18px;font-weight:900;color:var(--green);">Phase 4–5</div><div style="font-size:10px;color:var(--muted);margin-top:3px;">AI & Compliance</div></div>
+      <div class="card" style="text-align:center;padding:12px;"><div style="font-size:18px;font-weight:900;color:var(--gold);">Phase 6</div><div style="font-size:10px;color:var(--muted);margin-top:3px;">Live System</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE 11 — OUTCOMES
+══════════════════════════════════════════════════ -->
+<div class="slide" id="s11">
+  <div class="topbar">
+    <div class="topbar-label">Expected Outcomes</div>
+    <div class="topbar-num">11 / 11</div>
+  </div>
+  <div class="sbody scroll">
+    <h2 class="st an">Expected <em>Outcomes</em></h2>
+    <p class="sub an" style="margin-bottom:20px;">What the fully integrated system delivers across detection, compliance, and operations</p>
+    <div class="g2 an" style="margin-bottom:14px;">
+      <div class="oc" style="border-color:rgba(0,229,255,.3);background:rgba(0,229,255,.03);">
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:var(--cyan);border-radius:12px 0 0 12px;"></div>
+        <div class="oc-n" style="color:var(--cyan);">01 // DETECTION</div>
+        <div class="oc-t">Near Real-Time Mule Ring Identification</div>
+        <div class="oc-d">The full pipeline — from transaction submission to fraud score — operates in under 100ms. Cross-channel mule rings involving Mobile, Web, ATM, and UPI are detected and blocked as a single connected event, not as separate anomalies in separate dashboards.</div>
+      </div>
+      <div class="oc" style="border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.03);">
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:var(--green);border-radius:12px 0 0 12px;"></div>
+        <div class="oc-n" style="color:var(--green);">02 // ACCURACY</div>
+        <div class="oc-t">Dramatic Reduction in False Positives</div>
+        <div class="oc-d">By scoring entire transaction neighborhoods rather than individual rows, the GNN understands behavioral context. Legitimate high-velocity customers are not flagged. Only accounts with structurally abnormal ring topologies trigger alerts, eliminating the alert fatigue that plagues rule-based systems.</div>
+      </div>
+      <div class="oc" style="border-color:rgba(255,61,87,.3);background:rgba(255,61,87,.03);">
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:var(--red);border-radius:12px 0 0 12px;"></div>
+        <div class="oc-n" style="color:var(--red);">03 // COMPLIANCE</div>
+        <div class="oc-t">Fully Explainable, Audit-Ready Decisions</div>
+        <div class="oc-d">Every fraud flag includes a GNNExplainer-generated report identifying the specific accounts, devices, and transaction edges that drove the prediction, the fraud pattern matched, and the recommended action. This directly supports SAR filing requirements and satisfies regulatory audit obligations.</div>
+      </div>
+      <div class="oc" style="border-color:rgba(255,179,0,.3);background:rgba(255,179,0,.03);">
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:var(--gold);border-radius:12px 0 0 12px;"></div>
+        <div class="oc-n" style="color:var(--gold);">04 // ADAPTABILITY</div>
+        <div class="oc-t">Self-Improving Against Evolving Tactics</div>
+        <div class="oc-d">Unlike static rules, the GNN can be retrained as new fraud topologies emerge. Analyst feedback on reviewed alerts is written back to Neo4j as updated ground-truth labels, creating a continuous learning loop that makes the model progressively harder to evade.</div>
+      </div>
+    </div>
+    <div class="card c-cyan an">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div style="flex:1;min-width:220px;">
+          <div class="clabel cyan">System Vision</div>
+          <div class="cbody" style="font-size:14px;color:var(--text);">A unified, graph-first fraud intelligence platform that transforms every financial transaction into a node in a living knowledge graph — where the structure of money movement itself becomes the detection signal, and fraud has nowhere to hide.</div>
+        </div>
+        <div style="display:flex;gap:0;flex-shrink:0;">
+          <div style="text-align:center;padding:12px 20px;border:1px solid var(--border2);">
+            <div style="font-size:24px;font-weight:900;color:var(--cyan);">&lt;100ms</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;">Scoring Latency</div>
+          </div>
+          <div style="text-align:center;padding:12px 20px;border:1px solid var(--border2);border-left:none;">
+            <div style="font-size:24px;font-weight:900;color:var(--green);">4+</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;">Channels Unified</div>
+          </div>
+          <div style="text-align:center;padding:12px 20px;border:1px solid var(--border2);border-left:none;border-radius:0 8px 8px 0;">
+            <div style="font-size:24px;font-weight:900;color:var(--gold);">3</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;">Ring Patterns</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ══ NAVIGATION ══ -->
+<nav class="nav">
+  <button onclick="go(cur-1)" title="Prev">‹</button>
+  <div class="dots" id="dots"></div>
+  <span class="ncount" id="nc">01 / 11</span>
+  <button onclick="go(cur+1)" title="Next">›</button>
+</nav>
+
+<script>
+const N = 11;
+let cur = 1;
+
+const dotsEl = document.getElementById('dots');
+for(let i=1;i<=N;i++){
+  const d=document.createElement('div');
+  d.className='dot'+(i===1?' on':'');
+  d.onclick=()=>go(i);
+  dotsEl.appendChild(d);
+}
+
+function go(n){
+  if(n<1||n>N||n===cur)return;
+  document.getElementById('s'+cur).classList.remove('active');
+  document.getElementById('s'+cur).classList.add('out');
+  setTimeout(()=>document.getElementById('s'+cur).classList.remove('out'),500);
+  cur=n;
+  document.getElementById('s'+cur).classList.add('active');
+  document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('on',i+1===cur));
+  document.getElementById('nc').textContent=String(cur).padStart(2,'0')+' / '+String(N).padStart(2,'0');
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')go(cur+1);
+  if(e.key==='ArrowLeft')go(cur-1);
+});
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX);
+document.addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50)go(d<0?cur+1:cur-1);});
+</script>
+</body>
+</html>
